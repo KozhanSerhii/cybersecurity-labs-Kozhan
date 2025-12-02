@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Аналізатор Безпеки Пароля</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>Аналіз безпеки пароля</h2>
+
+      <div class="form-group">
+        <label for="userName">Ім'я:</label>
+        <input type="text" id="userName" placeholder="Наприклад: Іван" />
+      </div>
+      <div class="form-group">
+        <label for="userDob">Дата народження:</label>
+        <input type="date" id="userDob" />
+      </div>
+      <div class="form-group">
+        <label for="password">Пароль для перевірки:</label>
+        <input type="text" id="password" placeholder="Введіть пароль" />
+      </div>
+
+      <button onclick="runAnalysis()">Аналізувати</button>
+
+      <div id="result">
+        <div class="score-box">
+          Оцінка безпеки: <span id="scoreValue" class="score-value">0</span>/10
+        </div>
+        <h4>Рекомендації та зауваження:</h4>
+        <ul id="recommendationsList"></ul>
+      </div>
+    </div>
+
+    <script>
+      const commonDictionary = [
+        "password",
+        "qwerty",
+        "admin",
+        "123456",
+        "login",
+        "master",
+        "football",
+      ];
+
+      function runAnalysis() {
+        const name = document.getElementById("userName").value.trim();
+        const dob = document.getElementById("userDob").value;
+        const password = document.getElementById("password").value;
+
+        if (!password) {
+          alert("Будь ласка, введіть пароль.");
+          return;
+        }
+
+        let score = 0;
+        let recommendations = [];
+        const passLower = password.toLowerCase();
+
+        // 1. Довжина
+        if (password.length >= 12) {
+          score += 3;
+        } else if (password.length >= 8) {
+          score += 1;
+        } else {
+          recommendations.push(
+            "Пароль занадто короткий. Використовуйте мінімум 8 символів."
+          );
+        }
+
+        // 2. Складність символів
+        let varietyScore = 0;
+        if (/[A-Z]/.test(password)) varietyScore++;
+        if (/[a-z]/.test(password)) varietyScore++;
+        if (/[0-9]/.test(password)) varietyScore++;
+        if (/[^A-Za-z0-9]/.test(password)) varietyScore++;
+
+        if (varietyScore >= 3) {
+          score += 3;
+        } else {
+          recommendations.push(
+            "Додайте різноманітні символи: великі літери, цифри та знаки (!@#$)."
+          );
+        }
+
+        // 3. Словник
+        let isCommon = false;
+        commonDictionary.forEach((word) => {
+          if (passLower.includes(word)) isCommon = true;
+        });
+
+        if (isCommon) {
+          score -= 2;
+          recommendations.push(
+            "Знайдено просте словникове слово (напр. 'qwerty', 'admin')."
+          );
+        } else {
+          score += 1;
+        }
+
+        // 4. Персональні дані
+        let personalDataFound = false;
+
+        if (name && passLower.includes(name.toLowerCase())) {
+          personalDataFound = true;
+          recommendations.push(
+            `Не використовуйте своє ім'я ("${name}") у паролі.`
+          );
+        }
+
+        if (dob) {
+          const [year, month, day] = dob.split("-");
+          if (password.includes(year)) {
+            personalDataFound = true;
+            recommendations.push(
+              `Пароль містить ваш рік народження (${year}).`
+            );
+          }
+          if (
+            password.includes(day + month) ||
+            password.includes(day + "." + month)
+          ) {
+            personalDataFound = true;
+            recommendations.push(
+              "Пароль містить день та місяць вашого народження."
+            );
+          }
+        }
+
+        if (personalDataFound) {
+          score -= 5;
+        } else {
+          score += 3;
+        }
+
+        // Фіналізація
+        if (score < 1) score = 1;
+        if (score > 10) score = 10;
+
+        const resultDiv = document.getElementById("result");
+        const scoreSpan = document.getElementById("scoreValue");
+        const list = document.getElementById("recommendationsList");
+
+        resultDiv.style.display = "block";
+        scoreSpan.innerText = score;
+
+        scoreSpan.className = "score-value";
+        if (score <= 4) scoreSpan.classList.add("red");
+        else if (score <= 7) scoreSpan.classList.add("orange");
+        else scoreSpan.classList.add("green");
+
+        list.innerHTML = "";
+        if (recommendations.length === 0) {
+          const li = document.createElement("li");
+          li.innerText = "Чудовий пароль! Рекомендацій немає.";
+          li.style.color = "green";
+          list.appendChild(li);
+        } else {
+          recommendations.forEach((rec) => {
+            const li = document.createElement("li");
+            li.innerText = rec;
+            list.appendChild(li);
+          });
+        }
+      }
+    </script>
+  </body>
+</html>
